@@ -228,62 +228,32 @@ class ListStringSet implements StringSet {
 
     public int size() { return head.size(); }
 
-    // TODO!! opti
-    public boolean contains(String s) { 
-        //int currentIndex = size() / 2;
-        SNode currentNode = head;
-        while( !currentNode.isEmpty()) {
-            if(currentNode.elem() == s)
-                return true;
-            else 
-                currentNode = currentNode.getNext();
-        }
-        return false;  
-    }
-
-    // TODO : opt
-    public void add(String s) {
-        SNode currentNode = head;
-        if(currentNode.isEmpty()) {
-            SElement newNode = new SElement(s, new SEmpty());
-            head = newNode;
-        }
-        else {
-            while( !currentNode.getNext().isEmpty()) {
-                if(currentNode.elem() == s)
-                    return;
-                else
-                    currentNode = currentNode.getNext();
-            }   
-            if(currentNode.elem() == s)
-                return;
-            else
-                currentNode.setNext(s);
-        }
-    }
+    public boolean contains(String s) { return head.contains(s); }
+   
+    public void add(String s) { head = head.add(s); }
 }
 
 // a type for the nodes of the linked list
 interface SNode {
     int size();
     boolean isEmpty();
-    String elem();
+    String getVaule();
     SNode getNext();
     void setNext(String s);
-    
+    boolean contains(String s);
+    SNode add(String s);
 }
 
 // represents an empty node (which ends a linked list)
 class SEmpty implements SNode {
-    public int size() { return 0; }
     public SEmpty() {}
+    public int size() { return 0; }
     public boolean isEmpty() { return true; }
-    public String elem() { return ""; }
+    public String getVaule() { return ""; }
     public SNode getNext() { return null; }
-    public void setNext(String s) { 
-        // ??? 
-    }
-    
+    public void setNext(String s) {}
+    public boolean contains(String s) { return false; }
+    public SNode add(String s) { return new SElement(s, new SEmpty()); } 
 }
 
 // represents a non-empty node
@@ -291,32 +261,130 @@ class SElement implements SNode {
     protected String elem;
     protected SNode next;
 
-    public int size() { return 1 + next.size(); }
     public SElement(String element, SNode nextNode) { 
         this.elem = element; 
         this.next = nextNode; 
     }
 
+    public int size() { return 1 + next.size(); }
     public boolean isEmpty() { return false; }
-    public String elem() { return this.elem; }
+    public String getVaule() { return this.elem; }
     public SNode getNext() { return this.next; }
+
     public void setNext(String s) { 
         SNode newNode = new SElement(s, new SEmpty());
         this.next = newNode;
+    }
+
+    public boolean contains(String s) { 
+        if(s.compareTo(this.elem) == 0)
+            return true;
+        else if(s.compareTo(this.elem) < 0 )
+            return false;
+        else
+            return this.next.contains(s);
+    } 
+
+    public SNode add(String s) {
+        if(s.compareTo(this.elem) == 0)
+            return this;
+        else if(s.compareTo(this.elem) < 0) {
+            SElement newNode = new SElement(s, this);
+            return newNode;
+        }
+        else
+            this.next = this.next.add(s);
+            return this; 
+    }
+}
+
+class SMain {
+    public static void main(String[] args) {
+        StringSet set = new ListStringSet();
+        set.add("A");
+        set.add("A");
+        set.add("A");
+        set.add("A");
+        set.add("B");
+        set.add("C");
+        set.add("D");
+        set.add("E");
+        System.out.println(set.size());
+        System.out.println(set.contains("D"));
+        System.out.println(set.contains("Z"));
+    }
+}
+
+
+// Problem 2b
+
+interface Set<T> {
+    int size();
+    boolean contains(String s);
+    void add(String s);
+}
+
+class ListSet<T> implements Set {
+    protected Node head;
+    protected Comparator<T> comparator; //??? comparator object?
+
+    public ListSet(Comparator<T> comp) { 
+        this.head = new Empty();
+        this.comparator = comp; 
+    }
+
+    public int size() { return head.size(); }
+    public boolean contains(String s) { return false; }
+    public void add(String s) {}
+
+}
+
+// ??? node
+interface Node<T> {
+    int size();
+    //boolean isEmpty();
+    //T getVaule();
+    //SNode getNext();
+    //void setNext(T s);
+    boolean contains(T elem);
+}
+
+class Empty<T> implements Node<T> {
+    public Empty() {}
+    public int size() { return 0; }
+    public boolean contains(T elem) { return false; }
+
+}
+
+class Element<T> implements Node<T> {
+    protected T elem;
+    protected Node next;
+
+    public Element(T element, Node nextNode) {
+        this.elem = element;
+        this.next = nextNode;
+    }
+
+    public int size() { return 1 + this.next.size(); }
+
+    public boolean contains(T elem) {
+        return true; 
     }
 }
 
 class Main {
     public static void main(String[] args) {
-        StringSet set = new ListStringSet();
-        set.add("hi");
-        set.add("my");
-        set.add("my");
-        set.add("my");
-        set.add("my");
-        set.add("you");
-        set.add("i'm good");
+        Set set = new ListSet<String>((String s1, String s2) -> s2.compareTo(s1));
+        set.add("A");
+        set.add("B");
+        set.add("C");
+        set.add("D");
+        set.add("E");
         System.out.println(set.size());
-        System.out.println(set.contains("hi"));
+        System.out.println(set.contains("D"));
+        System.out.println(set.contains("G"));
     }
 }
+
+
+
