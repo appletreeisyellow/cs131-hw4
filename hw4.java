@@ -24,7 +24,7 @@ class Num implements Exp {
 
     public Num(double val) { this.val = val; }
 
-    public boolean equals(Object o) { return (o instanceof Num) && ((Num)o).val == this.val; }
+    //public boolean equals(Object o) { return (o instanceof Num) && ((Num)o).val == this.val; }
 
     public String toString() { return "" + val; }
 
@@ -46,7 +46,7 @@ class BinOp implements Exp {
         this.right = right;
         this.op = op;
     }
-
+/*
     public boolean equals(Object o) {
     	if(!(o instanceof BinOp))
     		return false;
@@ -54,7 +54,7 @@ class BinOp implements Exp {
     	return this.left.equals(b.left) && this.op.equals(b.op) &&
 		    	this.right.equals(b.right);
     }
-
+*/
     public String toString() {
 		return "BinOp(" + left + ", " + op + ", " + right + ")";
     }
@@ -97,7 +97,7 @@ class Push implements Instr {
         st.push(val);
     }
 
-	public boolean equals(Object o) { return (o instanceof Push) && ((Push)o).val == this.val; }
+	//public boolean equals(Object o) { return (o instanceof Push) && ((Push)o).val == this.val; }
 
     public String toString() {
 		return "Push " + val;
@@ -121,10 +121,10 @@ class Calculate implements Instr {
             }
         }    
     }
-
+/*
     public boolean equals(Object o) { return (o instanceof Calculate) && 
     						  ((Calculate)o).op.equals(this.op); }
-
+*/
     public String toString() {
 		return "Calculate " + op;
     }    
@@ -236,10 +236,6 @@ class ListStringSet implements StringSet {
 // a type for the nodes of the linked list
 interface SNode {
     int size();
-    boolean isEmpty();
-    String getVaule();
-    SNode getNext();
-    void setNext(String s);
     boolean contains(String s);
     SNode add(String s);
 }
@@ -248,10 +244,6 @@ interface SNode {
 class SEmpty implements SNode {
     public SEmpty() {}
     public int size() { return 0; }
-    public boolean isEmpty() { return true; }
-    public String getVaule() { return ""; }
-    public SNode getNext() { return null; }
-    public void setNext(String s) {}
     public boolean contains(String s) { return false; }
     public SNode add(String s) { return new SElement(s, new SEmpty()); } 
 }
@@ -267,14 +259,6 @@ class SElement implements SNode {
     }
 
     public int size() { return 1 + next.size(); }
-    public boolean isEmpty() { return false; }
-    public String getVaule() { return this.elem; }
-    public SNode getNext() { return this.next; }
-
-    public void setNext(String s) { 
-        SNode newNode = new SElement(s, new SEmpty());
-        this.next = newNode;
-    }
 
     public boolean contains(String s) { 
         if(s.compareTo(this.elem) == 0)
@@ -320,61 +304,82 @@ class SMain {
 
 interface Set<T> {
     int size();
-    boolean contains(String s);
-    void add(String s);
+    boolean contains(T value);
+    void add(T value);
 }
 
-class ListSet<T> implements Set {
-    protected Node head;
-    protected Comparator<T> comparator; //??? comparator object?
+class ListSet<T> implements Set<T> {
+    protected Node<T> head;
+    protected Comparator<T> comparator; 
 
     public ListSet(Comparator<T> comp) { 
-        this.head = new Empty();
+        this.head = new Empty<T>();
         this.comparator = comp; 
     }
 
     public int size() { return head.size(); }
-    public boolean contains(String s) { return false; }
-    public void add(String s) {}
+    public boolean contains(T value) { return head.contains(value, comparator); }
+    public void add(T value) { 
+        head = head.add(value, this.comparator);
+    }
 
 }
 
-// ??? node
+
 interface Node<T> {
     int size();
-    //boolean isEmpty();
-    //T getVaule();
-    //SNode getNext();
-    //void setNext(T s);
-    boolean contains(T elem);
+    boolean contains(T value, Comparator<T> comp);
+    Node<T> add(T value, Comparator<T> comp);
 }
 
 class Empty<T> implements Node<T> {
     public Empty() {}
     public int size() { return 0; }
-    public boolean contains(T elem) { return false; }
-
+    public boolean contains(T value, Comparator<T> comp) { return false; }
+    public Node<T> add(T value, Comparator<T> comp) { return new Element<T>(value, new Empty<T>()); }
 }
 
 class Element<T> implements Node<T> {
     protected T elem;
-    protected Node next;
+    protected Node<T> next;
 
-    public Element(T element, Node nextNode) {
+    public Element(T element, Node<T> nextNode) {
         this.elem = element;
         this.next = nextNode;
     }
 
     public int size() { return 1 + this.next.size(); }
 
-    public boolean contains(T elem) {
-        return true; 
+    public boolean contains(T value, Comparator<T> comp) {
+        if(comp.compare(value, this.elem) == 0)
+            return true;
+        else if(comp.compare(value, this.elem) < 0)
+            return false;
+        else  
+            return this.next.contains(value, comp);
+    }
+
+    public Node<T> add(T value, Comparator<T> comp) {
+        if(comp.compare(value, this.elem) == 0)
+            return this;
+        else if(comp.compare(value, this.elem) < 0) {
+            Element<T> newNode = new Element<T>(value, this);
+            return newNode;
+        }
+        else {
+            this.next = this.next.add(value, comp);
+            return this;
+        }
     }
 }
 
+
 class Main {
     public static void main(String[] args) {
-        Set set = new ListSet<String>((String s1, String s2) -> s2.compareTo(s1));
+        Set<String> set = new ListSet<String>((String s1, String s2) -> s2.compareTo(s1));
+        set.add("A");
+        set.add("A");
+        set.add("A");
         set.add("A");
         set.add("B");
         set.add("C");
