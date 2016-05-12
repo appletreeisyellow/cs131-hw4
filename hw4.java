@@ -24,7 +24,7 @@ class Num implements Exp {
 
     public Num(double val) { this.val = val; }
 
-    //public boolean equals(Object o) { return (o instanceof Num) && ((Num)o).val == this.val; }
+    public boolean equals(Object o) { return (o instanceof Num) && ((Num)o).val == this.val; }
 
     public String toString() { return "" + val; }
 
@@ -46,7 +46,7 @@ class BinOp implements Exp {
         this.right = right;
         this.op = op;
     }
-/*
+
     public boolean equals(Object o) {
     	if(!(o instanceof BinOp))
     		return false;
@@ -54,7 +54,7 @@ class BinOp implements Exp {
     	return this.left.equals(b.left) && this.op.equals(b.op) &&
 		    	this.right.equals(b.right);
     }
-*/
+
     public String toString() {
 		return "BinOp(" + left + ", " + op + ", " + right + ")";
     }
@@ -97,7 +97,7 @@ class Push implements Instr {
         st.push(val);
     }
 
-	//public boolean equals(Object o) { return (o instanceof Push) && ((Push)o).val == this.val; }
+	public boolean equals(Object o) { return (o instanceof Push) && ((Push)o).val == this.val; }
 
     public String toString() {
 		return "Push " + val;
@@ -121,10 +121,10 @@ class Calculate implements Instr {
             }
         }    
     }
-/*
+
     public boolean equals(Object o) { return (o instanceof Calculate) && 
     						  ((Calculate)o).op.equals(this.op); }
-*/
+
     public String toString() {
 		return "Calculate " + op;
     }    
@@ -204,9 +204,105 @@ class CalcTest {
         Instrs instrs1 = new Instrs(is1);
         assert(instrs1.execute() == 1.0);
 
+        List<Instr> is2 = new LinkedList<Instr>();
+        is2.add(new Push(1.0));
+        is2.add(new Push(2.0));
+        is2.add(new Calculate(Op.PLUS));
+        is2.add(new Push(3.0));
+        is2.add(new Calculate(Op.TIMES));
+        is2.add(new Push(1.0));
+        is2.add(new Calculate(Op.MINUS));
+        Instrs instrs2 = new Instrs(is2);
+        assert(instrs2.execute() == 8.0);
+
+        List<Instr> is3 = new LinkedList<Instr>();
+        is3.add(new Push(2.0));
+        is3.add(new Push(3.0));
+        is3.add(new Calculate(Op.PLUS));
+        Instrs instrs3 = new Instrs(is3);
+        assert(instrs3.execute() == 5.0);
+
+        List<Instr> is4 = new LinkedList<Instr>();
+        is4.add(new Push(2.0));
+        is4.add(new Push(3.0));
+        is4.add(new Calculate(Op.MINUS));
+        Instrs instrs4 = new Instrs(is4);
+        assert(instrs4.execute() == -1.0);
+
+        List<Instr> is5 = new LinkedList<Instr>();
+        is5.add(new Push(2.0));
+        is5.add(new Push(3.0));
+        is5.add(new Calculate(Op.TIMES));
+        Instrs instrs5 = new Instrs(is5);
+        assert(instrs5.execute() == 6.0);
+
+        List<Instr> is6 = new LinkedList<Instr>();
+        is6.add(new Push(2.0));
+        is6.add(new Push(3.0));
+        is6.add(new Calculate(Op.DIVIDE));
+        Instrs instrs6 = new Instrs(is6);
+        assert(instrs6.execute() == 0.66666666666666663);
+
+        List<Instr> is7 = new LinkedList<Instr>();
+        is7.add(new Push(1.0));
+        is7.add(new Push(2.0));
+        is7.add(new Calculate(Op.PLUS));
+        is7.add(new Push(3.0));
+        is7.add(new Calculate(Op.TIMES));
+        Instrs instrs7 = new Instrs(is7);
+        assert(instrs7.execute() == 9.0);
+
+        List<Instr> is8 = new LinkedList<Instr>();
+        is8.add(new Push(3.0));
+        is8.add(new Push(1.0));
+        is8.add(new Push(2.0));
+        is8.add(new Calculate(Op.PLUS));
+        is8.add(new Calculate(Op.TIMES));
+        Instrs instrs8 = new Instrs(is8);
+        assert(instrs8.execute() == 9.0);
+
+        List<Instr> is9 = new LinkedList<Instr>();
+        is9.add(new Push(1.0));
+        is9.add(new Push(3.0));
+        is9.add(new Calculate(Op.TIMES));
+        is9.add(new Push(2.0));
+        is9.add(new Push(3.0));
+        is9.add(new Calculate(Op.TIMES));
+        is9.add(new Calculate(Op.PLUS));
+        Instrs instrs9 = new Instrs(is9);
+        assert(instrs9.execute() == 9.0);
+
+        List<Instr> is10 = new LinkedList<Instr>();
+        is10.add(new Push(5.0));
+        is10.add(new Push(2.0));
+        is10.add(new Push(3.0));
+        is10.add(new Calculate(Op.MINUS));
+        is10.add(new Calculate(Op.TIMES));
+        Instrs instrs10 = new Instrs(is10);
+        assert(instrs10.execute() == -5.0);
+
+        List<Instr> is11 = new LinkedList<Instr>();
+        is11.add(new Push(5.0));
+        is11.add(new Push(2.0));
+        is11.add(new Push(4.0));
+        is11.add(new Calculate(Op.MINUS));
+        is11.add(new Calculate(Op.DIVIDE));
+        Instrs instrs11 = new Instrs(is11);
+        assert(instrs11.execute() == -2.5);
+
 		// a test for Problem 1c
 		assert(exp.compile().equals(is));
         assert(exp1.compile().equals(is1));
+        assert(exp2.compile().equals(is2));
+        assert(exp3.compile().equals(is3));
+        assert(exp4.compile().equals(is4));
+        assert(exp5.compile().equals(is5));
+        assert(exp6.compile().equals(is6));
+        assert(exp7.compile().equals(is7));
+        assert(exp8.compile().equals(is8));
+        assert(exp9.compile().equals(is9));
+        assert(exp10.compile().equals(is10));
+        assert(exp11.compile().equals(is11));
     }
 }
 
@@ -388,6 +484,17 @@ class Main {
         System.out.println(set.size());
         System.out.println(set.contains("D"));
         System.out.println(set.contains("G"));
+
+        Set<Integer> set2 = new ListSet<Integer>((Integer i1, Integer i2) -> i1 - i2);
+        set2.add(1);
+        set2.add(2);
+        set2.add(3);
+        set2.add(4);
+        set2.add(1);
+        set2.add(5);
+        System.out.println(set2.size());
+        System.out.println(set2.contains(1));
+        System.out.println(set2.contains(10));
     }
 }
 
