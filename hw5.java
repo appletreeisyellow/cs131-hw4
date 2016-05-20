@@ -106,7 +106,6 @@ class PPMImage {
 
 	// implement using Java 8 Streams
     public PPMImage negate() {
-		//throw new ImplementMe();
 		RGB[] negatePixels = new RGB[this.pixels.length];
 		
 		// Inititalize array negatePixels
@@ -126,7 +125,21 @@ class PPMImage {
 
 	// implement using Java 8 Streams
     public PPMImage greyscale() {
-		throw new ImplementMe();
+		RGB[] greyPixels = new RGB[this.pixels.length];
+		
+		// Inititalize array negatePixels
+		for(int i = 0; i < this.pixels.length; i++)
+			greyPixels[i] = new RGB(this.pixels[i].R, this.pixels[i].G, this.pixels[i].B);
+
+		Arrays.stream(greyPixels)
+				.parallel()
+				.forEach(rgb -> {
+					rgb.R = (int) Math.round(.299 * rgb.R + .587 * rgb.G + .114 * rgb.B);
+					rgb.G = rgb.R; 
+					rgb.B = rgb.R;
+				});
+
+		return new PPMImage(width, height, maxColorVal, greyPixels);
     }    
     
 	// implement using Java's Fork/Join library
@@ -181,8 +194,8 @@ class Main {
 		PPMImage negateImage = image.negate();
 		negateImage.toFile("florence_negate.ppm");
 
-		PPMImage negateImage = image.greyscale();
-		negateImage.toFile("florence_greyScale.ppm");
+		PPMImage greyImage = image.greyscale();
+		greyImage.toFile("florence_greyScale.ppm");
 	}
 
 }
