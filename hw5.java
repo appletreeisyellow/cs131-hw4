@@ -9,6 +9,9 @@
 */
 
 import java.io.*;
+//import java.util.Arrays;
+//import java.util.concurrent.*;
+import java.util.*;
 
 // a marker for code that you need to implement
 class ImplementMe extends RuntimeException {}
@@ -103,7 +106,22 @@ class PPMImage {
 
 	// implement using Java 8 Streams
     public PPMImage negate() {
-		throw new ImplementMe();
+		//throw new ImplementMe();
+		RGB[] negatePixels = new RGB[this.pixels.length];
+		
+		// Inititalize array negatePixels
+		for(int i = 0; i < this.pixels.length; i++)
+			negatePixels[i] = new RGB(this.pixels[i].R, this.pixels[i].G, this.pixels[i].B);
+
+		Arrays.stream(negatePixels)
+				.parallel()
+				.forEach(rgb -> {
+					rgb.R = this.maxColorVal - rgb.R;
+					rgb.G = this.maxColorVal - rgb.G;
+					rgb.B = this.maxColorVal - rgb.B;
+				});
+
+		return new PPMImage(width, height, maxColorVal, negatePixels);
     }
 
 	// implement using Java 8 Streams
@@ -155,5 +173,17 @@ class Gaussian {
 		}
 		return kernel2d;
     }
+}
+
+class Main {
+	public static void main(String[] args) throws FileNotFoundException, IOException {
+		PPMImage image = new PPMImage("florence.ppm");
+		PPMImage negateImage = image.negate();
+		negateImage.toFile("florence_negate.ppm");
+
+		PPMImage negateImage = image.greyscale();
+		negateImage.toFile("florence_greyScale.ppm");
+	}
+
 }
 
