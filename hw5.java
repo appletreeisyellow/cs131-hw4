@@ -29,9 +29,6 @@ class RGB {
     }
 
     public String toString() { return "(" + R + "," + G + "," + B + ")"; }
-
-   
-
 }
 
 
@@ -71,11 +68,6 @@ class MirrorTask extends RecursiveTask< RGB[] > {
     		}
 
     		return leftMirror;
-
-    		//left.fork();
-    		//right.fork();
-    		//RGB[] leftMirror = left.join();
-    		//RGB[] rightMirror = right.join();
 
 /*    		left.fork();
     		RGB[] rightMirror = right.compute();
