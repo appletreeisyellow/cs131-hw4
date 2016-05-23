@@ -38,9 +38,10 @@ class RGB {
 // This class is used to compute mirror image by fork/join
 class MirrorTask extends RecursiveTask< RGB[] > {
 	private RGB[] originalPixels;
-	private int low, // the first pixel of the lowest row
-				high; // the first pixel of the highest row
+	private int low, // inclusive
+				high; // exclusive
 	private int width;
+	private final int SEQUENTIAL_CUTOFF = 10000;
 
     public MirrorTask(RGB[] a, int l, int h, int w) {
     	this.originalPixels = a;
@@ -51,20 +52,67 @@ class MirrorTask extends RecursiveTask< RGB[] > {
     }
 
     public RGB[] compute() {
-    	// Process image row by row
-    	// so SEQUENTIAL_CUTOFF is the length of the width
-    	if(high - low > width) { 
-    		int lowRowNum = low / width;
-    		int highRowNum = high / width;
-    		int midRowNum = (lowRowNum + highRowNum) / 2 + 1;
-    		int mid = midRowNum * width;
-    		MirrorTask left = new MirrorTask(originalPixels, low, mid - 1, width);
+    	if(high - low > SEQUENTIAL_CUTOFF) { 
+    		//int lowRowNum = low / width;
+    		//int highRowNum = high / width;
+    		//int midRowNum = (lowRowNum + highRowNum) / 2 + 1;
+    		//int mid = midRowNum * width;
+    		int mid = (low + high) / 2;
+    		MirrorTask left = new MirrorTask(originalPixels, low, mid, width);
     		MirrorTask right = new MirrorTask(originalPixels, mid, high, width);
-    		left.fork();
-    		right.fork();
-    		RGB[] leftMirror = left.join();
-    		RGB[] rightMirror = right.join();
 
+    		left.fork();
+    		RGB[] rightMirror = right.compute();
+    		RGB[] leftMirror = new RGB[originalPixels.length];
+    		leftMirror = left.join();
+
+    		for(int i = mid; i < high; i++) {
+    			leftMirror[i] = rightMirror[i];
+    		}
+
+    		return leftMirror;
+
+    		//left.fork();
+    		//right.fork();
+    		//RGB[] leftMirror = left.join();
+    		//RGB[] rightMirror = right.join();
+
+/*    		left.fork();
+    		RGB[] rightMirror = right.compute();
+    		RGB[] leftMirror = left.join();
+
+    		int combinedWidth = high - low;
+    		int currentWidth;
+
+
+    		// if the length of the combined array is even, set currentWidth to be the correct length
+    		if(combinedWidth % 2 == 0)
+    			currentWidth = mid - low + 1;
+    		else 
+    			currentWidth = mid - low;
+
+    		// leftMirror and rightMirror will be copied into this array 
+    		RGB[] combinedMirror = new RGB[combinedWidth];
+
+    		//System.out.println("currentWidth: " + currentWidth + "		leftMirror length: " + leftMirror.length + "		rightMirror length:" + rightMirror.length + "		combinedWidth" + combinedWidth);
+
+    		// Add leftMirror
+    		for(int i = 0; i < currentWidth; i++) {
+    			combinedMirror[i] = new RGB(leftMirror[i].R, 
+						    				leftMirror[i].G,
+						    				leftMirror[i].B);
+    		}
+
+    		// Add rightMirror
+	    	for(int j = currentWidth; j < combinedWidth; j++) {
+	    		combinedMirror[j] = new RGB(rightMirror[j-currentWidth].R, 
+							    			rightMirror[j-currentWidth].G,
+							    			rightMirror[j-currentWidth].B);
+	    	}
+
+    		return combinedMirror;
+    		*/
+/*
     		// Get left and right and combine them into larger image
     		int currentWidth = mid - low;
     		int combinedWidth = high - low + 1;
@@ -84,7 +132,7 @@ class MirrorTask extends RecursiveTask< RGB[] > {
 							    			rightMirror[j-currentWidth].B);
 	    	}
     		return combinedMirror;
-    		
+*/		
 /* 
     		RGB[] leftMirror = left.join();
     		RGB[] rightMirror = right.join();
@@ -105,7 +153,34 @@ class MirrorTask extends RecursiveTask< RGB[] > {
     		return mirrorPixels;*/
     	}
     	else {
-    		RGB[] oneRowOfPixels = new RGB[width]; // Construct one row of pixels
+    		RGB[] mirror = new RGB[originalPixels.length];
+
+    		for(int i = low; i < high; i++) {
+    			int col = i % width;
+    			int theLastElementOfThisRow = (i / width + 1) * width - 1;
+    			int mirrorIndex = theLastElementOfThisRow - col;
+    			mirror[i] = new RGB(originalPixels[mirrorIndex].R, 
+					    			originalPixels[mirrorIndex].G, 
+					    			originalPixels[mirrorIndex].B );
+    		}
+
+    		return mirror;
+
+ /*   		int length = high - low;
+    		RGB[] mirror = new RGB[length]; 
+
+    		for(int i = low; i < high; i ++) {
+    			int col = i % width;
+    			int theLastElementOfThisRow = (i / width + 1) * width - 1;
+    			int mirrorIndex = theLastElementOfThisRow - col;
+    			mirror[i - low] = new RGB(originalPixels[mirrorIndex].R, 
+					    				originalPixels[mirrorIndex].G, 
+					    				originalPixels[mirrorIndex].B );
+    			//System.out.print(i + " ");
+    		}
+    		return mirror; 
+    		*/
+    		/*
     		for(int i = low; i < high+1; i++){
     			int index = i - low;
     			int mirrorIndex = high - index;
@@ -114,7 +189,7 @@ class MirrorTask extends RecursiveTask< RGB[] > {
     											originalPixels[mirrorIndex].B);
     		}
 
-    		return oneRowOfPixels;
+    		return oneRowOfPixels;*/
     		/*
     		RGB[] mirrorPixels = new RGB[originalPixels.length];
     		for(int i = low; i < high; i++) {
@@ -129,7 +204,92 @@ class MirrorTask extends RecursiveTask< RGB[] > {
     }
 }
 	
+// This class is used to compute mirror image by fork/join
+class GaussianTask extends RecursiveTask< RGB[] > {
+	private RGB[] originalPixels;
+	private int low, // inclusive
+				high; // exclusive
+	private int width, height;
+	private int radius;
+	private double sigma;
+	private final int SEQUENTIAL_CUTOFF = 10000;
 
+    public GaussianTask(RGB[] a, int l, int hi, int w, int he, int r, double s) {
+    	this.originalPixels = a;
+    	this.low = l;
+    	this.high = hi;
+    	this.width = w;
+    	this.height = he;
+    	this.radius = r;
+    	this.sigma = s;
+    }
+
+    
+    private int clamp(int val, int min, int max) {
+    	// min (inclusive)
+    	// max (exclusive)
+    	return Math.max(min, Math.min(max-1, val));
+    }
+
+    public RGB[] compute() {
+    	if(high - low > SEQUENTIAL_CUTOFF) {
+    		int mid = (low + high) / 2;
+    		GaussianTask left = new GaussianTask(originalPixels, low, mid, width, height, radius, sigma);
+    		GaussianTask right = new GaussianTask(originalPixels, mid, high, width, height, radius, sigma);
+
+    		left.fork();
+    		RGB[] rightGau = right.compute();
+    		RGB[] leftGau = new RGB[originalPixels.length];
+    		leftGau = left.join();
+
+    		//int currentWidth = mid - low;
+    		//int combinedWidth = high - low;
+    		//for(int i = currentWidth; i < currentWidth; i++) {
+    		//	leftGau[i] = rightGau[i - currentWidth];
+    		//}
+
+    		for(int i = mid; i < high; i++) {
+    			leftGau[i] = rightGau[i];
+    		}
+
+    		return leftGau;
+
+    	} else {
+
+    		//int length = high - low;
+    		//RGB[] gau = new RGB[length];
+
+    		RGB[] gau = new RGB[originalPixels.length];
+
+    		double[][] gaussianFilter = Gaussian.gaussianFilter(radius, sigma); // size: (2 * radius + 1) x (2 * radius + 1) 
+
+    		for(int i = low; i < high; i++) {
+    			int row = i / width;
+    			int col = i % width;
+    			int rowSize = 2 * radius + 1;
+    			int colSize = 2 * radius + 1;
+    			
+    			int R = 0, G = 0, B = 0;
+    			// get result r, g, b
+    			for(int r = 0; r < rowSize; r++) {
+    				for(int c = 0; c < colSize; c++) {
+    					int rowClamped = clamp(row + (r - radius), 0, height);
+    					int colClamped = clamp(col + (c - radius), 0, width);
+    					int correspondingIndex = rowClamped * width + colClamped;
+    					R += gaussianFilter[c][r] * originalPixels[correspondingIndex].R;
+    					G += gaussianFilter[c][r] * originalPixels[correspondingIndex].G;
+    					B += gaussianFilter[c][r] * originalPixels[correspondingIndex].B;
+    					//int testrow = row + (r - radius);
+    					//int testcol = col + (c - radius);
+    					//System.out.println("row: " + testrow + "    col:" + testcol + "\n" + "rowClamped: " + rowClamped + "    colClamped:" + colClamped + "\n\n");
+    				}
+    			}
+    			gau[i] = new RGB(R, G, B);
+    		}
+    		return gau;
+    	}
+    }
+}
 
 // an object representing a single PPM image
 class PPMImage {
@@ -244,12 +404,8 @@ class PPMImage {
     
 	// implement using Java's Fork/Join library
     public PPMImage mirrorImage() {
-    	//int low = 0; // low = the first pixel of the lowest row
-    	//int high = this.pixels.length - this.width; // high = the first pixel of the highest row
-		//MirrorTask newPixels = new MirrorTask(pixels, low, high, width);
-		MirrorTask newPixels = new MirrorTask(pixels, 0, pixels.length - 1, width);
+		MirrorTask newPixels = new MirrorTask(pixels, 0, pixels.length, width);
 
-		// Compute mirror image (fork/join method in compute() function)
 		RGB[] mirrorPixels = newPixels.compute();
 
 		return new PPMImage(width, height, maxColorVal, mirrorPixels);
@@ -308,7 +464,9 @@ class PPMImage {
 
 	// implement using Java's Fork/Join library
     public PPMImage gaussianBlur(int radius, double sigma) {
-		throw new ImplementMe();
+		GaussianTask newPixels = new GaussianTask(pixels, 0, pixels.length, width, height, radius, sigma);
+		RGB[] gaussianPixels = newPixels.compute();
+		return new PPMImage(width, height, maxColorVal, gaussianPixels);
     }
 
 }
@@ -351,10 +509,19 @@ class Main {
 		PPMImage greyImage = image.greyscale();
 		greyImage.toFile("florence_greyScale.ppm");
 
+		PPMImage mirror2 = image.mirrorImage2();
+		mirror2.toFile("florence_mirror2.ppm");
+	
+		int r = 20;
+		double sigma = 2.0;  
+		PPMImage gaussian = image.gaussianBlur(r, sigma);
+		gaussian.toFile("florence_gaussian.ppm");*/
+
+
 		PPMImage mirror = image.mirrorImage();
 		mirror.toFile("florence_mirror.ppm");
 
-		*/
+		
 		/*
 		int[] left = new int[10];
 		left[0] = 1;
@@ -371,7 +538,8 @@ class Main {
 		for(int i = 0; i < 10; i++)
 			System.out.print(left[i] + " ");*/
 
-/*		RGB[] testRGB = new RGB[16];
+/*		// Test mirrorImage2
+		RGB[] testRGB = new RGB[16];
 		for(int i = 0; i < 16; i++){
 			testRGB[i] = new RGB(i, i, i);
 			//System.out.println(testRGB[i]);
@@ -381,8 +549,18 @@ class Main {
 		PPMImage imageTest = new PPMImage(4, 4, 225, testRGB);
 		PPMImage testImage = imageTest.mirrorImage2();*/
 
-		PPMImage mirror2 = image.mirrorImage2();
-		mirror2.toFile("florence_mirror2.ppm");
+		
+
+/*		// Test Gaussian Blur
+		RGB[] testRGB = new RGB[16];
+		for(int i = 0; i < 16; i++){
+			testRGB[i] = new RGB(i, i, i);
+			System.out.println(testRGB[i]);
+		}
+			
+
+		PPMImage imageTest = new PPMImage(4, 4, 225, testRGB);
+		PPMImage testImage = imageTest.gaussianBlur(r, sigma);*/
 		
 	}
 
