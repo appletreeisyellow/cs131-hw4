@@ -9,9 +9,11 @@
 */
 
 import java.io.*;
-//import java.util.Arrays;
-//import java.util.concurrent.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.Arrays;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 // a marker for code that you need to implement
 class ImplementMe extends RuntimeException {}
@@ -28,7 +30,105 @@ class RGB {
 
     public String toString() { return "(" + R + "," + G + "," + B + ")"; }
 
+   
+
 }
+
+
+// This class is used to compute mirror image by fork/join
+class MirrorTask extends RecursiveTask< RGB[] > {
+	private RGB[] originalPixels;
+	private int low, // the first pixel of the lowest row
+				high; // the first pixel of the highest row
+	private int width;
+
+    public MirrorTask(RGB[] a, int l, int h, int w) {
+    	this.originalPixels = a;
+    	//this.mirrorPixels = a; // Initialize the mirrorPixels to be the same as original pixels
+    	this.low = l;
+    	this.high = h;
+    	this.width = w;
+    }
+
+    public RGB[] compute() {
+    	// Process image row by row
+    	// so SEQUENTIAL_CUTOFF is the length of the width
+    	if(high - low > width) { 
+    		int lowRowNum = low / width;
+    		int highRowNum = high / width;
+    		int midRowNum = (lowRowNum + highRowNum) / 2 + 1;
+    		int mid = midRowNum * width;
+    		MirrorTask left = new MirrorTask(originalPixels, low, mid - 1, width);
+    		MirrorTask right = new MirrorTask(originalPixels, mid, high, width);
+    		left.fork();
+    		right.fork();
+    		RGB[] leftMirror = left.join();
+    		RGB[] rightMirror = right.join();
+
+    		// Get left and right and combine them into larger image
+    		int currentWidth = mid - low;
+    		int combinedWidth = high - low + 1;
+    		RGB[] combinedMirror = new RGB[combinedWidth];
+
+    		// Add leftMirror
+    		for(int i = 0; i < currentWidth; i++) {
+    			combinedMirror[i] = new RGB(leftMirror[i].R, 
+						    				leftMirror[i].G,
+						    				leftMirror[i].B);
+	    	}
+
+	    	// Add rightMirror
+	    	for(int j = mid; j < combinedWidth; j++) {
+	    		combinedMirror[j] = new RGB(rightMirror[j-currentWidth].R, 
+							    			rightMirror[j-currentWidth].G,
+							    			rightMirror[j-currentWidth].B);
+	    	}
+    		return combinedMirror;
+    		
+/* 
+    		RGB[] leftMirror = left.join();
+    		RGB[] rightMirror = right.join();
+
+			RGB[] mirrorPixels = new RGB[originalPixels.length];
+    		for(int i = low; i < mid; i++) {
+    			mirrorPixels[i].R = leftMirror[i].R;
+    			mirrorPixels[i].G = leftMirror[i].G;
+    			mirrorPixels[i].B = leftMirror[i].B;
+    		}
+
+    		for(int j = mid; j < high; j++) {
+    			mirrorPixels[j].R = leftMirror[j].R;
+    			mirrorPixels[j].G = leftMirror[j].G;
+    			mirrorPixels[j].B = leftMirror[j].B;
+    		}
+
+    		return mirrorPixels;*/
+    	}
+    	else {
+    		RGB[] oneRowOfPixels = new RGB[width]; // Construct one row of pixels
+    		for(int i = low; i < high+1; i++){
+    			int index = i - low;
+    			int mirrorIndex = high - index;
+    			oneRowOfPixels[index] = new RGB(originalPixels[mirrorIndex].R,
+    											originalPixels[mirrorIndex].G,
+    											originalPixels[mirrorIndex].B);
+    		}
+
+    		return oneRowOfPixels;
+    		/*
+    		RGB[] mirrorPixels = new RGB[originalPixels.length];
+    		for(int i = low; i < high; i++) {
+    			int origIndex = high - 1 - (low - i);
+    			mirrorPixels[i] = new RGB(originalPixels[origIndex].R, 
+						    				originalPixels[origIndex].G, 
+						    				originalPixels[origIndex].B);
+    		}
+
+    		return mirrorPixels; */
+    	}
+    }
+}
+	
 
 
 // an object representing a single PPM image
@@ -127,7 +227,7 @@ class PPMImage {
     public PPMImage greyscale() {
 		RGB[] greyPixels = new RGB[this.pixels.length];
 		
-		// Inititalize array negatePixels
+		// Initialize array greyPixels
 		for(int i = 0; i < this.pixels.length; i++)
 			greyPixels[i] = new RGB(this.pixels[i].R, this.pixels[i].G, this.pixels[i].B);
 
@@ -144,12 +244,66 @@ class PPMImage {
     
 	// implement using Java's Fork/Join library
     public PPMImage mirrorImage() {
-		throw new ImplementMe();
+    	//int low = 0; // low = the first pixel of the lowest row
+    	//int high = this.pixels.length - this.width; // high = the first pixel of the highest row
+		//MirrorTask newPixels = new MirrorTask(pixels, low, high, width);
+		MirrorTask newPixels = new MirrorTask(pixels, 0, pixels.length - 1, width);
+
+		// Compute mirror image (fork/join method in compute() function)
+		RGB[] mirrorPixels = newPixels.compute();
+
+		return new PPMImage(width, height, maxColorVal, mirrorPixels);
     }
+
+    // Convert RGB to integer
+	// Example: 
+	// Input: RGB = (255, 10, 3)
+	// Output: 255010003
+	private int toInteger(RGB rgb) { return (rgb.R * 1000000 + rgb.G * 1000 + rgb.B); }
+
+    // Convert integer into RGB
+	// Example:
+	// Input: 255010003
+	// Output: RGB = (255, 10, 3)
+	private RGB toRGB(int inte) {
+	    int r = inte / 1000000;
+	    int g = (inte % 1000000) / 1000;
+	    int b = (inte % 1000000) % 1000;
+	    return new RGB(r, g, b);
+	} 
 
 	// implement using Java 8 Streams
     public PPMImage mirrorImage2() {
-		throw new ImplementMe();
+		int[] original = new int[pixels.length];
+		int[] mirrorInt = new int[pixels.length];
+		RGB[] mirrorRGB = new RGB[pixels.length];
+
+
+		
+		// Generate a stream of integers, one per pixel
+		IntStream.range(0, pixels.length)
+					.parallel()
+					.forEach(i -> original[i] = toInteger(pixels[i])); 
+
+		// Process these integers in parallel
+		IntStream.range(0, pixels.length)
+					.parallel()
+					.forEach(i -> {
+						int col = i % width;
+						int theLastElementOfThisRow = (i / width + 1) * width - 1;
+						int mirrorIndex = theLastElementOfThisRow - col;
+						mirrorInt[i] = original[mirrorIndex];
+						//System.out.println("i: " + i + "	mirror i: " + mirrorIndex);
+					});
+
+		// Convert integer array back to RGB array
+		IntStream.range(0, pixels.length)
+					.parallel()
+					.forEach(i -> {
+						mirrorRGB[i] = toRGB(mirrorInt[i]);
+					});
+			
+		return new PPMImage(width, height, maxColorVal, mirrorRGB);
     }
 
 	// implement using Java's Fork/Join library
@@ -191,11 +345,45 @@ class Gaussian {
 class Main {
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		PPMImage image = new PPMImage("florence.ppm");
-		PPMImage negateImage = image.negate();
+		/*PPMImage negateImage = image.negate();
 		negateImage.toFile("florence_negate.ppm");
 
 		PPMImage greyImage = image.greyscale();
 		greyImage.toFile("florence_greyScale.ppm");
+
+		PPMImage mirror = image.mirrorImage();
+		mirror.toFile("florence_mirror.ppm");
+
+		*/
+		/*
+		int[] left = new int[10];
+		left[0] = 1;
+		left[1] = 2;
+		left[2] = 3;
+		left[3] = 4;
+		left[4] = 5;
+
+		int[] right = new int[] {6, 7, 8, 9, 10};
+		for(int i = 5; i < 10; i++){
+			left[i] = right[i - 5];
+		}
+
+		for(int i = 0; i < 10; i++)
+			System.out.print(left[i] + " ");*/
+
+/*		RGB[] testRGB = new RGB[16];
+		for(int i = 0; i < 16; i++){
+			testRGB[i] = new RGB(i, i, i);
+			//System.out.println(testRGB[i]);
+		}
+			
+
+		PPMImage imageTest = new PPMImage(4, 4, 225, testRGB);
+		PPMImage testImage = imageTest.mirrorImage2();*/
+
+		PPMImage mirror2 = image.mirrorImage2();
+		mirror2.toFile("florence_mirror2.ppm");
+		
 	}
 
 }
