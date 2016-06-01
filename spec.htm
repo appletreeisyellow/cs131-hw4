@@ -1,0 +1,148 @@
+Homework 4: Calculators and Sets, Revisited
+
+Due Thursday, May 12 at 11:30pm
+
+Turn in your homework via the course web page as an updated version of the hw4.java text file that I have provided.
+
+Make sure the file can be successfully compiled with javac. There should be no compilation errors or warnings; if not you get
+an automatic 0 for the homework!
+
+Recall the CS131 Academic Honesty Policy! You must list whom you discussed the assignment with at the top of your assignment, 
+and also what other resources you used.
+
+This assignment is meant to give you some exposure to the power of the object-oriented paradigm, in particular its separation 
+of interface from implementation: objects communicate only by sending messages to one another, without access to the internal 
+state of other objects. To make this style work, you have to think carefully about your design: the different classes that 
+exist, their interfaces, and their relationships to one another. This assignment is also meant to allow you to concretely 
+compare the object-oriented paradigm to the functional style that you've used in the first half of the course.
+As usual, good style matters. Here are the rules:
+
+Do not modify the names of any types, classes, instance variables, and methods that our code defines or uses in hw4.java. 
+We are relying on them for testing purposes; your code will get no credit in cases where the test script can't find what 
+it's looking for.
+
+Use interfaces as types and classes as their implementations, rarely if ever using a class directly as a type.
+Never use type-unsafe features of Java, like casts and the instanceof expression. Similarly, never build your own version of 
+instanceof, such as a method that returns true if an object has a particular class. If you ever need to figure out the class 
+of some object, then your design is not as object-oriented as it should be.
+
+Never use the null value for anything.
+Always compare objects with their equals method rather than with the == operator.
+You may use any number of helper methods in classes that you require. Make those protected or private as you see fit.
+
+A few other tips:
+You will find the Java API Documentation useful to understand how various data structures from the standard library work.
+Since we are now in an imperative language, you can make use of side effects (e.g., updating a variable's value). Feel free 
+to do this when it feels natural to you, as long as your code works as intended.
+
+Write comments where useful to tell the reader what's going on.
+Test your code on several inputs, including corner cases -- we will be doing the same.
+Now on to the assignment!
+
+
+Problem #1: Calculators
+
+File hw4.java declares an interface Exp that is the analogue of the exp type in OCaml from Homework 2. We have also declared 
+two classes that meet this interface, which correspond to the two cases in the definition of the OCaml exp type: Num 
+represents a single number of type double, and BinOp represents a binary arithmetic operation whose operands are arbitrary 
+arithmetic expressions. The binary operator Op associated with such an operation is defined via an enum, which in Java is 
+essentially a class with a finite number of instances (in this case, named PLUS, MINUS, etc.).
+
+For starters implement a constructor for the Num and BinOp classes. For example, the arithmetic expression (1.0 + 2.0) * 3.0 
+would be represented as
+
+new BinOp(new BinOp(new Num(1.0), Op.PLUS, new Num(2.0)), Op.TIMES, new Num(3.0))
+
+Now uncomment the eval function in Exp and implement this method for Num and BinOp to evaluate arithmetic expressions. In a 
+binary operation, the operands should be evaluated from left to right. The calculate methods that I've provided for the 
+operators of type Op should come in handy.
+
+Uncomment the first test case in CalcTest.main for an example of what you should support, and add more test cases to gain 
+confidence in your code. After compiling your file with javac you can execute this test case with the command java -ea 
+CalcTest. The -ea flag is used to enable asserts (which are disabled by default).
+
+I've also provided equals and toString functions for the implementations of Exp, which can come in handy for debugging 
+purposes. (Unfortunately there's no easy way to write an equals method in Java without using casts! But your code should 
+never use casts or instanceof tests.)
+
+The interface Instr along with the classes Push and Calculate in hw4.java represent the stack instructions that were defined 
+by the OCaml type instr in Homework 2 (but we are ignoring the Swap instruction this time). For starters implement a 
+constructor for the Push and Calculate classes. For example, new Push(1.0) and new Calculate(Op.PLUS) should be legal 
+expressions for creating instructions.
+
+The class Instrs represents a list of Instr instructions. Uncomment its execute method and implement it; it should have the 
+same behavior as the function of the same name from Homework 2. As in that function, you should use an auxiliary stack as 
+storage space for the execution. Java has a Stack class in the standard library that should be useful.
+
+To maintain good OO style, you will want to define a method in Instr for executing a single instruction. If implemented 
+properly, you will not need to use instanceof tests or casts. See the second test case in CalcTest for a simple example of 
+what your code should do.
+
+Aside from ordinary for and while loops, Java has a special "for-each" loop for iterating over arrays and other collections, 
+similar to the for loop in Python. Check out this page for an example with lists. Use this loop instead of a regular for or 
+while loop whenever it is natural.
+
+Uncomment the method compile in Exp and implement it; this method should behave like the function of the same name from 
+Homework 2. Uncomment the third test case in CalcTest for a simple example of what is expected.
+Problem #2: Sets
+
+The interface StringSet in hw4.java represents the type of a set of strings, similar to what we saw in class. Uncomment the 
+method declarations in StringSet and complete the class ListStringSet, which implements sets using an underlying linked list 
+that you will implement. You may not use any of the data structures from the standard library in your implementation.
+
+For efficiency, your implementation should store the elements in sorted order from least to greatest. See the compareTo method
+of String, which you can use for this purpose. So add should add the new element in the right place in the sorted order (and 
+due to the set semantics, should not add anything if the element is already in the set), and contains should optimize its 
+search for an element using the fact that the elements are in sorted order.
+
+Implementing the methods of ListStringSet will involve adding methods to SNode and to the two classes SEmpty and SElement 
+that implement SNode. A ListStringSet has a field head representing the head node of the list, and that field has type SNode. 
+An SNode is either an SEmptyNode, representing the end of the list, or an SElementNode, which represents a node containing 
+an element of the set.
+
+If you set things up well, the node methods will be doing most of the work. In particular, you should never use instanceof 
+tests or casts. For example, the ListStringSet should never need to know whether its head is an instance of SEmpty or 
+SElement, and it should never need to get access to the internal state of any nodes (e.g., their elem or next fields). 
+Rather, there should be a complete separation of interface from implementation.
+
+An interesting design challenge is how to implement add as a single pass through the list. Your implementation should be 
+able to achieve this, without requiring the ListStringSet to access implementation details of the nodes. Hint: The add 
+method on nodes should return a new node, representing the current node's replacement in the list after the addition of
+a new element.
+
+StringSet and its implementation ListStringSet are overly limited in two ways. First, they only support sets of strings, 
+whereas it should be possible to make a set that supports elements of any type. Second, they use the built-in compareTo 
+method of String to do sorting, but a client may want to choose a different comparison function. For example, even for 
+strings it may be useful to sort from greatest to least, sort by the length of the string, etc.
+
+Make a new interface Set along with a class ListSet as well as an interface Node and classes Empty and Element, all of which
+should be identical to their counterparts from the previous problem, except that they are generalized as described in the 
+above paragraph. To support sets of any type, the new classes and interfaces should use parametric polymorphism. To support
+application-specific comparison functions, the constructor of ListSet should take a comparator object as an argument (and 
+this should be its sole argument); the constructors of other classes may also need to be passed a comparator. The comparator
+has a compare method that "knows" how to compare two objects of a particular type.
+
+If javac gives you a warning that looks like this: 
+Note: hw4.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details. 
+this likely means that you're missing some type parameters for polymorphic types (e.g., you're using the type Comparator 
+instead of something like Comparator<T>). Recompile with the flag mentioned above to get a useful error message. The code 
+you turn in should not have compiler warnings.
+
+You can create a comparator by making a new class that implements the Comparator interface and provides a compare method. 
+There are several ways to do this. Until about a year ago, the best way was to use an anonymous class, which is a class with
+a single instance, both of which are created in a single new expression. For example, to make a set of strings that is sorted
+from greatest to least, this code should work with your implementation:
+
+new ListSet<String>(new Comparator<String>() { 
+                      public int compare(String s1, String s2) {
+                        return s2.compareTo(s1); 
+                      } });
+                      
+Last year, Java finally saw the light and introduced first-class functions, with a very OCaml-like syntax, so now you can 
+say the following, which gets automatically translated by the compiler to the above code:
+new ListSet<String>((String s1, String s2) -> s2.compareTo(s1));
+Here (String s1, String s2) -> s2.compareTo(s1) is an anonymous function that takes two arguments and returns the result 
+of evaluating the expression after the arrow. If you need the function body to have multiple statements, you can instead 
+enclose the body in curly braces like a normal Java method and then put arbitrary code there. Finally, Java supports type 
+inference for anonymous functions as well, so you can leave off the two occurrences of String above and that works too!
